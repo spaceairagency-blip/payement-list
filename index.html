@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="shortcut icon" href="image.png" type="image/x-icon">
+<meta name="viewport" class="fb" content="width=device-width, initial-scale=1.0">
+<title>Basavara Manager</title>
+
+<style>
+*{box-sizing:border-box;font-family:Arial}
+body{margin:0;background:#f4f6f8}
+.hidden{display:none}
+.box{max-width:1200px;margin:20px auto;background:#fff;padding:20px;border-radius:10px}
+h2{color:#2ecc71;margin-top:0}
+input,select,button{padding:8px;margin:4px}
+button{background:#2ecc71;color:#fff;border:none;border-radius:5px;cursor:pointer}
+button.red{background:#e74c3c}
+button.blue{background:#3498db}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#2ecc71;color:#fff}
+.ok{color:green;font-weight:bold}
+.no{color:red;font-weight:bold}
+.fb{
+  border-radius: 50%;
+}
+.top{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+@media(max-width:600px){table{font-size:13px}}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="box" id="loginBox">
+<h2>Login</h2>
+<input id="user" placeholder="Username"><br>
+<input id="pass" type="password" placeholder="Password"><br>
+<button onclick="login()">Login</button>
+<p id="msg"></p>
+</div>
+
+<!-- APP -->
+<div class="box hidden" id="app">
+<h2 id="title">Basavara Manager</h2>
+
+<div class="top">
+<select id="lang" onchange="setLang()">
+<option value="en">EN</option>
+<option value="bn">BN</option>
+</select>
+
+<select id="month"></select>
+<button onclick="addPerson()" id="addBtn">Add Bharatia</button>
+<button onclick="exportExcel()" id="exBtn">Export Excel</button>
+<input id="filter" placeholder="Filter name / flat" onkeyup="draw()">
+<button class="red" onclick="logout()">Logout</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Flat</th>
+<th>Name</th>
+<th>Rent</th>
+<th>Paid</th>
+<th>Baki</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<h3 id="sumTitle">Summary</h3>
+<ul id="summary"></ul>
+</div>
+
+<script>
+/* ---------- LOGIN ---------- */
+function login(){
+ if(user.value==="aminul1234" && pass.value==="ami123@"){
+  localStorage.setItem("login","1");
+  loginBox.classList.add("hidden");
+  app.classList.remove("hidden");
+ }else msg.innerText="Wrong login";
+}
+function logout(){
+  localStorage.removeItem("login");
+  location.reload();
+}
+if(localStorage.getItem("login")){
+ loginBox.classList.add("hidden");
+ app.classList.remove("hidden");
+}
+
+/* ---------- MONTH ---------- */
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+months.forEach(m=>month.innerHTML+=`<option>${m}</option>`);
+
+/* ---------- DATA ---------- */
+let data=JSON.parse(localStorage.getItem("rent"))||{};
+month.onchange=draw;
+
+/* ---------- ADD ---------- */
+function addPerson(){
+ let flat=prompt(lang.value==="bn"?"ফ্ল্যাট নাম্বার":"Flat No");
+ if(!flat)return;
+ let name=prompt(lang.value==="bn"?"নাম":"Name");
+ if(!name)return;
+ let rent=+prompt(lang.value==="bn"?"মোট ভাড়া":"Total Rent",50);
+ let m=month.value;
+ if(!data[m])data[m]=[];
+ data[m].push({flat,name,rent,paid:0,history:[]});
+ save(); draw();
+}
+
+/* ---------- DRAW ---------- */
+function draw(){
+ let m=month.value;
+ list.innerHTML="";
+ summary.innerHTML="";
+ if(!data[m])return;
+
+ let f=filter.value.toLowerCase();
+
+ data[m].forEach((p,i)=>{
+  if(!(p.name+p.flat).toLowerCase().includes(f))return;
+  let due=p.rent-p.paid;
+  list.innerHTML+=`
+<tr>
+<td>${p.flat}</td>
+<td>${p.name}</td>
+<td>${p.rent}</td>
+<td>${p.paid}</td>
+<td>${due}</td>
+<td class="${due<=0?'ok':'no'}">${due<=0?'✔️':'❌'}</td>
+<td>
+<button onclick="pay(${i})">Pay</button>
+<button class="blue" onclick="showHistory(${i})">📜</button>
+<button onclick="edit(${i})">✏️</button>
+<button class="red" onclick="del(${i})">❌</button>
+</td>
+</tr>`;
+ });
+
+ data[m].forEach(p=>{
+  let li=document.createElement("li");
+  li.innerText=`Flat ${p.flat} | ${p.name} → Paid: ${p.paid} | Due: ${p.rent-p.paid}`;
+  summary.appendChild(li);
+ });
+}
+
+/* ---------- PAY ---------- */
+function pay(i){
+ let m=month.value;
+ let a=+prompt(lang.value==="bn"?"কত টাকা দিল":"Paid Amount");
+ if(!a)return;
+ let d=new Date().toLocaleDateString();
+ data[m][i].paid+=a;
+ data[m][i].history.push({amount:a,date:d});
+ save(); draw();
+}
+
+/* ---------- HISTORY ---------- */
+function showHistory(i){
+ let m=month.value;
+ let h=data[m][i].history;
+ if(h.length===0){alert("No payment yet");return;}
+ let txt="Payment History:\n\n";
+ h.forEach(x=>{
+  txt+=`${x.date} → ${x.amount} Taka\n`;
+ });
+ alert(txt);
+}
+
+/* ---------- EDIT ---------- */
+function edit(i){
+ let m=month.value;
+ let r=+prompt("Edit Rent",data[m][i].rent);
+ if(r>=0)data[m][i].rent=r;
+ save(); draw();
+}
+
+/* ---------- DELETE ---------- */
+function del(i){
+ let m=month.value;
+ data[m].splice(i,1);
+ save(); draw();
+}
+
+/* ---------- SAVE ---------- */
+function save(){
+ localStorage.setItem("rent",JSON.stringify(data));
+}
+
+/* ---------- EXPORT ---------- */
+function exportExcel(){
+ let m=month.value;
+ if(!data[m])return alert("No data");
+ let csv="Flat,Name,Rent,Paid,Due\n";
+ data[m].forEach(p=>{
+  csv+=`${p.flat},${p.name},${p.rent},${p.paid},${p.rent-p.paid}\n`;
+ });
+ let blob=new Blob([csv],{type:"text/csv"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download=m+"_rent.xlsx";
+ a.click();
+}
+
+/* ---------- LANGUAGE ---------- */
+function setLang(){
+ if(lang.value==="bn"){
+  title.innerText="বাসাভাড়া ম্যানেজার";
+  addBtn.innerText="ভাড়াটিয়া যোগ";
+  exBtn.innerText="এক্সেল";
+  filter.placeholder="নাম / ফ্ল্যাট";
+  sumTitle.innerText="সারসংক্ষেপ";
+ }else location.reload();
+}
+
+draw();
+</script>
+
+</body>
+</html>

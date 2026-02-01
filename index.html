@@ -36,6 +36,16 @@ th{background:#2ecc71;color:#fff}
  .top,button,#filter{display:none}
  body{background:#fff}
 }
+
+/* HISTORY MODAL */
+#historyModal{
+ position:fixed; inset:0; background:rgba(0,0,0,.6);
+ display:flex; align-items:center; justify-content:center; z-index:999;
+}
+#historyModal .card{
+ background:#fff; width:95%; max-width:500px;
+ border-radius:10px; padding:15px;
+}
 </style>
 </head>
 
@@ -89,10 +99,27 @@ th{background:#2ecc71;color:#fff}
 
 <h3 id="sumTitle">Summary</h3>
 <ul id="summary"></ul>
-
 <p><b>Total Rent:</b> <span id="tRent">0</span></p>
 <p><b>Total Paid:</b> <span id="tPaid">0</span></p>
 <p><b>Total Due:</b> <span id="tDue">0</span></p>
+</div>
+
+<!-- PAYMENT HISTORY MODAL -->
+<div id="historyModal" class="hidden">
+ <div class="card">
+  <h3 style="margin-top:0">
+   Payment History
+   <button class="red" style="float:right" onclick="closeHistory()">X</button>
+  </h3>
+  <div class="table-wrap">
+   <table>
+    <thead>
+     <tr><th>Date</th><th>Amount</th></tr>
+    </thead>
+    <tbody id="historyList"></tbody>
+   </table>
+  </div>
+ </div>
 </div>
 
 <script>
@@ -104,13 +131,9 @@ function login(){
   app.classList.remove("hidden");
  } else msg.innerText="Wrong login";
 }
-function logout(){
- localStorage.removeItem("login");
- location.reload();
-}
+function logout(){ localStorage.removeItem("login"); location.reload(); }
 if(localStorage.getItem("login")){
- loginBox.classList.add("hidden");
- app.classList.remove("hidden");
+ loginBox.classList.add("hidden"); app.classList.remove("hidden");
 }
 
 /* YEAR */
@@ -127,63 +150,41 @@ let data=JSON.parse(localStorage.getItem("rent"))||{};
 
 /* ADD PERSON (ALL DETAILS) */
 function addPerson(){
- let flat=prompt("Flat No");
- if(!flat)return;
-
- let name=prompt("Name");
- if(!name)return;
-
+ let flat=prompt("Flat No"); if(!flat)return;
+ let name=prompt("Name"); if(!name)return;
  let phone=prompt("Phone Number");
  let nid=prompt("NID Number");
  let father=prompt("Father's Name");
  let mother=prompt("Mother's Name");
  let address=prompt("Permanent Address");
-
  let rent=+prompt("Total Rent",0);
 
  let m=month.value;
  if(!data[m])data[m]=[];
-
- data[m].push({
-  flat,name,phone,nid,father,mother,address,
-  rent,paid:0,history:[]
- });
-
- save();draw();
+ data[m].push({flat,name,phone,nid,father,mother,address,rent,paid:0,history:[]});
+ save(); draw();
 }
 
 /* DRAW */
 function draw(){
  let m=month.value;
- list.innerHTML="";
- summary.innerHTML="";
+ list.innerHTML=""; summary.innerHTML="";
  let totalRent=0,totalPaid=0;
-
- if(!data[m]){
-  tRent.innerText=tPaid.innerText=tDue.innerText=0;
-  return;
- }
-
+ if(!data[m]){tRent.innerText=tPaid.innerText=tDue.innerText=0;return;}
  let f=filter.value.toLowerCase();
 
  data[m].forEach((p,i)=>{
   if(!(p.name+p.flat+p.phone).toLowerCase().includes(f))return;
-
-  let due=p.rent-p.paid;
-  totalRent+=p.rent;
-  totalPaid+=p.paid;
-
+  let due=p.rent-p.paid; totalRent+=p.rent; totalPaid+=p.paid;
   list.innerHTML+=`
 <tr>
-<td>${p.flat}</td>
-<td>${p.name}</td>
-<td>${p.rent}</td>
-<td>${p.paid}</td>
-<td>${due}</td>
+<td>${p.flat}</td><td>${p.name}</td><td>${p.rent}</td>
+<td>${p.paid}</td><td>${due}</td>
 <td class="${due<=0?'ok':'no'}">${due<=0?'✔️':'❌'}</td>
 <td>
 <button onclick="pay(${i})">Pay</button>
-<button class="blue" onclick="details(${i})">👤</button>
+<button class="blue" onclick="openHistory(${i})">📜</button>
+<button onclick="details(${i})">👤</button>
 <button onclick="edit(${i})">✏️</button>
 <button class="red" onclick="del(${i})">❌</button>
 </td>
@@ -204,14 +205,13 @@ function draw(){
 /* PAY */
 function pay(i){
  let m=month.value;
- let a=+prompt("Paid Amount");
- if(!a)return;
+ let a=+prompt("Paid Amount"); if(!a)return;
  data[m][i].paid+=a;
  data[m][i].history.push({amount:a,date:new Date().toLocaleDateString()});
- save();draw();
+ save(); draw();
 }
 
-/* DETAILS POPUP */
+/* DETAILS */
 function details(i){
  let p=data[month.value][i];
  alert(
@@ -225,37 +225,47 @@ function details(i){
  );
 }
 
-/* EDIT */
+/* PAYMENT HISTORY */
+function openHistory(i){
+ let h=data[month.value][i].history;
+ let historyList=document.getElementById("historyList");
+ historyList.innerHTML="";
+ if(!h.length){
+  historyList.innerHTML="<tr><td colspan='2'>No payment yet</td></tr>";
+ }else{
+  h.forEach(x=>{
+   historyList.innerHTML+=`<tr><td>${x.date}</td><td>${x.amount}</td></tr>`;
+  });
+ }
+ document.getElementById("historyModal").classList.remove("hidden");
+}
+function closeHistory(){
+ document.getElementById("historyModal").classList.add("hidden");
+}
+
+/* EDIT / DELETE */
 function edit(i){
  let m=month.value;
  let r=+prompt("Edit Rent",data[m][i].rent);
- if(r>=0)data[m][i].rent=r;
- save();draw();
+ if(r>=0)data[m][i].rent=r; save(); draw();
 }
-
-/* DELETE */
 function del(i){
- data[month.value].splice(i,1);
- save();draw();
+ data[month.value].splice(i,1); save(); draw();
 }
 
 /* SAVE */
-function save(){
- localStorage.setItem("rent",JSON.stringify(data));
-}
+function save(){ localStorage.setItem("rent",JSON.stringify(data)); }
 
 /* EXPORT */
 function exportCSV(){
- let m=month.value;
- if(!data[m])return alert("No data");
+ let m=month.value; if(!data[m])return alert("No data");
  let csv="Flat,Name,Phone,NID,Father,Mother,Address,Rent,Paid,Due\n";
  data[m].forEach(p=>{
   csv+=`${p.flat},${p.name},${p.phone},${p.nid},${p.father},${p.mother},${p.address},${p.rent},${p.paid},${p.rent-p.paid}\n`;
  });
  let a=document.createElement("a");
  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
- a.download=m+"_rent.csv";
- a.click();
+ a.download=m+"_rent.csv"; a.click();
 }
 
 /* PRINT */
@@ -274,6 +284,5 @@ function setLang(){
 
 draw();
 </script>
-
 </body>
 </html>

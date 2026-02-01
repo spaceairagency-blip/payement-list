@@ -3,58 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="image.png">
 <title>Basavara Manager</title>
-
 <style>
-*{box-sizing:border-box;font-family:Arial}
-body{margin:0;background:#f4f6f8}
-.hidden{display:none}
-.box{max-width:1200px;margin:15px auto;background:#fff;padding:15px;border-radius:10px}
-h2{color:#2ecc71;margin:0 0 10px}
-input,select,button{padding:8px;margin:4px}
-button{background:#2ecc71;color:#fff;border:none;border-radius:5px;cursor:pointer}
-button.red{background:#e74c3c}
-button.blue{background:#3498db}
-.top{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ddd;padding:8px;text-align:center}
-th{background:#2ecc71;color:#fff}
-.ok{color:green;font-weight:bold}
-.no{color:red;font-weight:bold}
-
-.year{color:red;font-size:14px;margin-left:5px}
-
+*{box-sizing:border-box;font-family:Arial;margin:0;padding:0;}
+body{background:#f4f6f8;}
+.hidden{display:none;}
+.box{max-width:1200px;margin:15px auto;background:#fff;padding:15px;border-radius:10px;}
+h2{color:#2ecc71;margin-bottom:10px;}
+input,select,button{padding:8px;margin:4px;}
+button{background:#2ecc71;color:#fff;border:none;border-radius:5px;cursor:pointer;}
+button.red{background:#e74c3c;}
+button.blue{background:#3498db;}
+.top{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;}
+th{background:#2ecc71;color:#fff;}
+.ok{color:green;font-weight:bold;}
+.no{color:red;font-weight:bold;}
+.year{color:red;font-size:14px;margin-left:5px;}
 @media(max-width:600px){
- .top{flex-direction:column}
- button,input,select{width:100%}
- table{font-size:12px}
+ .top{flex-direction:column;}
+ button,input,select{width:100%;}
+ table{font-size:12px;}
 }
-
 @media print{
- .top,button,#filter{display:none}
- body{background:#fff}
+ .top,button,#filter,#historyContainer{display:none;}
+ body{background:#fff;}
 }
-
-/* HISTORY MODAL */
-#historyModal{
- position:fixed; inset:0; background:rgba(0,0,0,.6);
- display:flex; align-items:center; justify-content:center; z-index:999;
+/* Transaction blocks */
+.payment-container { font-family: Arial, sans-serif; padding: 10px; max-height:400px; overflow-y:auto; border:1px solid #ccc; border-radius:5px; margin-top:15px; background:#fff; }
+.transaction { 
+    border: 1px solid #ccc; 
+    padding: 10px; 
+    margin-bottom: 10px; 
+    cursor: pointer; 
+    background-color: #f9f9f9; 
+    border-radius:5px;
 }
-#historyModal .card{
- position:relative;
- background:#fff; width:95%; max-width:500px;
- border-radius:10px; padding:15px;
-}
-.closeBtn{
- position:absolute; top:10px; right:10px; padding:5px 10px;
- cursor:pointer;
-}
+.transaction:hover { background-color: #e0e0e0; }
 </style>
 </head>
-
 <body>
 
 <!-- LOGIN -->
@@ -75,13 +64,10 @@ th{background:#2ecc71;color:#fff}
 <option value="en">EN</option>
 <option value="bn">BN</option>
 </select>
-
 <select id="month"></select>
-
 <button onclick="addPerson()" id="addBtn">Add Bharatia</button>
 <button onclick="exportCSV()" id="exBtn">Export CSV</button>
 <button class="blue" onclick="printReport()">Print</button>
-
 <input id="filter" placeholder="Filter name / flat / phone" onkeyup="draw()">
 <button class="red" onclick="logout()">Logout</button>
 </div>
@@ -108,6 +94,13 @@ th{background:#2ecc71;color:#fff}
 <p><b>Total Rent:</b> <span id="tRent">0</span></p>
 <p><b>Total Paid:</b> <span id="tPaid">0</span></p>
 <p><b>Total Due:</b> <span id="tDue">0</span></p>
+
+<!-- PAYMENT HISTORY BELOW -->
+<div id="historyContainer" class="payment-container hidden">
+  <h2>Payment History</h2>
+  <div id="paymentContainer"></div>
+</div>
+
 </div>
 
 <script>
@@ -135,8 +128,9 @@ month.onchange=draw;
 
 /* DATA */
 let data=JSON.parse(localStorage.getItem("rent"))||{};
+let currentHistoryIndex=-1;
 
-/* ADD PERSON (All Months) */
+/* ADD PERSON */
 function addPerson(){
  let flat=prompt("Flat No"); if(!flat)return;
  let name=prompt("Name"); if(!name)return;
@@ -146,7 +140,6 @@ function addPerson(){
  let mother=prompt("Mother's Name");
  let address=prompt("Permanent Address");
  let rent=+prompt("Total Rent",0);
-
  months.forEach(m=>{
    if(!data[m]) data[m]=[];
    data[m].push({flat,name,phone,nid,father,mother,address,rent,paid:0,history:[]});
@@ -154,16 +147,15 @@ function addPerson(){
  save(); draw();
 }
 
-/* DRAW */
+/* DRAW TABLE */
 function draw(){
  let m=month.value;
  list.innerHTML=""; summary.innerHTML="";
  let totalRent=0,totalPaid=0;
- if(!data[m]){tRent.innerText=tPaid.innerText=tDue.innerText=0;return;}
+ if(!data[m]){tRent.innerText=tPaid.innerText=tDue.innerText=0; return;}
  let f=filter.value.toLowerCase();
-
  data[m].forEach((p,i)=>{
-  if(!(p.name+p.flat+p.phone).toLowerCase().includes(f))return;
+  if(!(p.name+p.flat+p.phone).toLowerCase().includes(f)) return;
   let due=p.rent-p.paid; totalRent+=p.rent; totalPaid+=p.paid;
   list.innerHTML+=`
 <tr>
@@ -172,20 +164,18 @@ function draw(){
 <td class="${due<=0?'ok':'no'}">${due<=0?'✔️':'❌'}</td>
 <td>
 <button onclick="pay(${i})">Pay</button>
-<button class="blue" onclick="openHistory(${i})">📜</button>
+<button onclick="openHistory(${i})" class="blue">History</button>
 <button onclick="details(${i})">👤</button>
 <button onclick="edit(${i})">✏️</button>
 <button class="red" onclick="del(${i})">❌</button>
 </td>
 </tr>`;
  });
-
  data[m].forEach(p=>{
   let li=document.createElement("li");
   li.innerText=`Flat ${p.flat} | ${p.name} | Phone: ${p.phone} | Due: ${p.rent-p.paid}`;
   summary.appendChild(li);
  });
-
  tRent.innerText=totalRent;
  tPaid.innerText=totalPaid;
  tDue.innerText=totalRent-totalPaid;
@@ -194,10 +184,12 @@ function draw(){
 /* PAY */
 function pay(i){
  let m=month.value;
- let a=+prompt("Paid Amount"); if(!a)return;
- data[m][i].paid+=a;
- data[m][i].history.push({amount:a,date:new Date().toLocaleDateString()});
- save();draw();
+ let a=+prompt("Paid Amount"); 
+ if(!a) return;
+ data[m][i].paid += a;
+ data[m][i].history.push({amount:a, date:new Date().toLocaleDateString()});
+ save(); draw();
+ openHistory(i); // show below table
 }
 
 /* DETAILS */
@@ -214,47 +206,29 @@ function details(i){
  );
 }
 
-/* PAYMENT HISTORY + EDIT */
-let currentHistoryIndex=-1;
+/* PAYMENT HISTORY - blocks below table */
 function openHistory(i){
- currentHistoryIndex=i;
- let h = data[month.value][i].history;
- let historyList = document.getElementById("historyList");
- historyList.innerHTML = "";
+ currentHistoryIndex = i;
+ let m = month.value;
+ let h = data[m][i].history;
+ let container = document.getElementById("historyContainer");
+ let paymentDiv = document.getElementById("paymentContainer");
+ paymentDiv.innerHTML = "";
  if(!h.length){
-  historyList.innerHTML="<tr><td colspan='3'>No payment yet</td></tr>";
+   paymentDiv.innerHTML = "<p>No payment yet</p>";
  } else {
-  h.forEach((x,idx)=>{
-   historyList.innerHTML+=`
-   <tr>
-    <td>${x.date}</td>
-    <td>${x.amount}</td>
-    <td><button onclick="editHistory(${idx})">✏️</button></td>
-   </tr>`;
-  });
+   h.forEach((x, idx)=>{
+     let div = document.createElement("div");
+     div.className = "transaction";
+     div.innerHTML = `<p>Transaction ${idx+1} - $${x.amount}</p>`;
+     div.onclick = ()=>alert(`Payment Details:\nAmount: $${x.amount}\nDate: ${x.date}`);
+     paymentDiv.appendChild(div);
+   });
  }
- document.getElementById("historyModal").classList.remove("hidden");
+ container.classList.remove("hidden");
 }
 
-function editHistory(idx){
- if(currentHistoryIndex===-1) return;
- let m=month.value;
- let p = data[m][currentHistoryIndex];
- let oldAmount=p.history[idx].amount;
- let newAmount = +prompt("Edit Amount", oldAmount);
- if(isNaN(newAmount)||newAmount<0) return alert("Invalid amount");
- p.history[idx].amount=newAmount;
- p.paid = p.history.reduce((sum,x)=>sum+x.amount,0);
- save(); draw();
- openHistory(currentHistoryIndex);
-}
-
-function closeHistory(){
- document.getElementById("historyModal").classList.add("hidden");
- currentHistoryIndex=-1;
-}
-
-/* EDIT / DELETE (Delete only current month) */
+/* EDIT / DELETE */
 function edit(i){
  let m=month.value;
  let r=+prompt("Edit Rent",data[m][i].rent);
@@ -262,14 +236,14 @@ function edit(i){
 }
 function del(i){
  let m = month.value;
- data[m].splice(i,1); // only current month
+ data[m].splice(i,1);
  save(); draw();
 }
 
 /* SAVE */
 function save(){ localStorage.setItem("rent",JSON.stringify(data)); }
 
-/* EXPORT */
+/* EXPORT CSV */
 function exportCSV(){
  let m=month.value; if(!data[m])return alert("No data");
  let csv="Flat,Name,Phone,NID,Father,Mother,Address,Rent,Paid,Due\n";
@@ -299,4 +273,3 @@ draw();
 </script>
 </body>
 </html>
-

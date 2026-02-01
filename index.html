@@ -44,7 +44,7 @@ th{background:#2ecc71;color:#fff}
 
 <!-- APP -->
 <div class="box hidden" id="app">
-<h2 id="title">Basavara Manager <h2 class="year">2026</h2></h2>
+<h2 id="title">Basavara Manager <h2 class="year"></h2></h2>
 
 <div class="top">
 <select id="lang" onchange="setLang()">
@@ -95,7 +95,8 @@ if(localStorage.getItem("login")){
  loginBox.classList.add("hidden");
  app.classList.remove("hidden");
 }
-
+const d = new Date();
+document.queryselector(".year").innerHTML = d;
 /* ---------- MONTH ---------- */
 const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 months.forEach(m=>month.innerHTML+=`<option>${m}</option>`);
@@ -227,6 +228,7 @@ draw();
 
 </body>
 </html>
+
 
 
 

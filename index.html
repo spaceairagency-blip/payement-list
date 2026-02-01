@@ -109,24 +109,8 @@ th{background:#2ecc71;color:#fff}
 <p><b>Total Due:</b> <span id="tDue">0</span></p>
 </div>
 
-<!-- PAYMENT HISTORY MODAL
-<div id="historyModal" class="hidden">
- <div class="card">
-  <h3 style="margin-top:0">
-   Payment History
-   <span class="closeBtn" onclick="closeHistory()">✖</span>
-  </h3>
-  <div class="table-wrap">
-   <table>
-    <thead>
-     <tr><th>Date</th><th>Amount</th><th>Edit</th></tr>
-    </thead>
-    <tbody id="historyList"></tbody>
-   </table>
-  </div>
- </div>
-</div>
--->
+
+
 <script>
 /* LOGIN */
 function login(){
@@ -153,7 +137,7 @@ month.onchange=draw;
 /* DATA */
 let data=JSON.parse(localStorage.getItem("rent"))||{};
 
-/* ADD PERSON (ALL DETAILS) */
+/* ADD PERSON (All Months) */
 function addPerson(){
  let flat=prompt("Flat No"); if(!flat)return;
  let name=prompt("Name"); if(!name)return;
@@ -164,9 +148,10 @@ function addPerson(){
  let address=prompt("Permanent Address");
  let rent=+prompt("Total Rent",0);
 
- let m=month.value;
- if(!data[m])data[m]=[];
- data[m].push({flat,name,phone,nid,father,mother,address,rent,paid:0,history:[]});
+ months.forEach(m=>{
+   if(!data[m]) data[m]=[];
+   data[m].push({flat,name,phone,nid,father,mother,address,rent,paid:0,history:[]});
+ });
  save(); draw();
 }
 
@@ -188,7 +173,7 @@ function draw(){
 <td class="${due<=0?'ok':'no'}">${due<=0?'✔️':'❌'}</td>
 <td>
 <button onclick="pay(${i})">Pay</button>
-
+<button class="blue" onclick="openHistory(${i})">📜</button>
 <button onclick="details(${i})">👤</button>
 <button onclick="edit(${i})">✏️</button>
 <button class="red" onclick="del(${i})">❌</button>
@@ -270,14 +255,19 @@ function closeHistory(){
  currentHistoryIndex=-1;
 }
 
-/* EDIT / DELETE */
+/* EDIT / DELETE (All Months for delete) */
 function edit(i){
  let m=month.value;
  let r=+prompt("Edit Rent",data[m][i].rent);
  if(r>=0)data[m][i].rent=r; save(); draw();
 }
 function del(i){
- data[month.value].splice(i,1); save(); draw();
+ let tenant = data[month.value][i];
+ months.forEach(m=>{
+   if(!data[m]) return;
+   data[m] = data[m].filter(p => p.flat !== tenant.flat);
+ });
+ save(); draw();
 }
 
 /* SAVE */
@@ -313,4 +303,3 @@ draw();
 </script>
 </body>
 </html>
-

@@ -173,7 +173,7 @@ function draw(){
  });
  data[m].forEach(p=>{
   let li=document.createElement("li");
-  li.innerText=`Flat ${p.flat} | ${p.name} | Phone: ${p.phone} | Due: ${p.rent-p.paid}`;
+  li.innerText=`Flat ${p.flat} | ${p.name} | Phone: ${p.phone} | Due: ৳${p.rent-p.paid}`;
   summary.appendChild(li);
  });
  tRent.innerText=totalRent;
@@ -220,8 +220,8 @@ function openHistory(i){
    h.forEach((x, idx)=>{
      let div = document.createElement("div");
      div.className = "transaction";
-     div.innerHTML = `<p>Transaction ${idx+1} - $${x.amount}</p>`;
-     div.onclick = ()=>alert(`Payment Details:\nAmount: $${x.amount}\nDate: ${x.date}`);
+     div.innerHTML = `<p>Transaction ${idx+1} - ৳${x.amount}</p>`;
+     div.onclick = ()=>alert(`Payment Details:\nAmount: ৳${x.amount}\nDate: ${x.date}`);
      paymentDiv.appendChild(div);
    });
  }

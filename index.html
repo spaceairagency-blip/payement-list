@@ -43,8 +43,13 @@ th{background:#2ecc71;color:#fff}
  display:flex; align-items:center; justify-content:center; z-index:999;
 }
 #historyModal .card{
+ position:relative;
  background:#fff; width:95%; max-width:500px;
  border-radius:10px; padding:15px;
+}
+.closeBtn{
+ position:absolute; top:10px; right:10px; padding:5px 10px;
+ cursor:pointer;
 }
 </style>
 </head>
@@ -104,6 +109,23 @@ th{background:#2ecc71;color:#fff}
 <p><b>Total Due:</b> <span id="tDue">0</span></p>
 </div>
 
+<!-- PAYMENT HISTORY MODAL -->
+<div id="historyModal" class="hidden">
+ <div class="card">
+  <h3 style="margin-top:0">
+   Payment History
+   <span class="closeBtn" onclick="closeHistory()">✖</span>
+  </h3>
+  <div class="table-wrap">
+   <table>
+    <thead>
+     <tr><th>Date</th><th>Amount</th><th>Edit</th></tr>
+    </thead>
+    <tbody id="historyList"></tbody>
+   </table>
+  </div>
+ </div>
+</div>
 
 <script>
 /* LOGIN */
@@ -191,7 +213,7 @@ function pay(i){
  let a=+prompt("Paid Amount"); if(!a)return;
  data[m][i].paid+=a;
  data[m][i].history.push({amount:a,date:new Date().toLocaleDateString()});
- save(); draw();
+ save();draw();
 }
 
 /* DETAILS */
@@ -208,22 +230,44 @@ function details(i){
  );
 }
 
-/* PAYMENT HISTORY */
+/* PAYMENT HISTORY + EDIT */
+let currentHistoryIndex=-1;
 function openHistory(i){
- let h=data[month.value][i].history;
- let historyList=document.getElementById("historyList");
- historyList.innerHTML="";
+ currentHistoryIndex=i;
+ let h = data[month.value][i].history;
+ let historyList = document.getElementById("historyList");
+ historyList.innerHTML = "";
  if(!h.length){
-  historyList.innerHTML="<tr><td colspan='2'>No payment yet</td></tr>";
- }else{
-  h.forEach(x=>{
-   historyList.innerHTML+=`<tr><td>${x.date}</td><td>${x.amount}</td></tr>`;
+  historyList.innerHTML="<tr><td colspan='3'>No payment yet</td></tr>";
+ } else {
+  h.forEach((x,idx)=>{
+   historyList.innerHTML+=`
+   <tr>
+    <td>${x.date}</td>
+    <td>${x.amount}</td>
+    <td><button onclick="editHistory(${idx})">✏️</button></td>
+   </tr>`;
   });
  }
  document.getElementById("historyModal").classList.remove("hidden");
 }
+
+function editHistory(idx){
+ if(currentHistoryIndex===-1) return;
+ let m=month.value;
+ let p = data[m][currentHistoryIndex];
+ let oldAmount=p.history[idx].amount;
+ let newAmount = +prompt("Edit Amount", oldAmount);
+ if(isNaN(newAmount)||newAmount<0) return alert("Invalid amount");
+ p.history[idx].amount=newAmount;
+ p.paid = p.history.reduce((sum,x)=>sum+x.amount,0);
+ save(); draw();
+ openHistory(currentHistoryIndex);
+}
+
 function closeHistory(){
  document.getElementById("historyModal").classList.add("hidden");
+ currentHistoryIndex=-1;
 }
 
 /* EDIT / DELETE */
@@ -269,4 +313,3 @@ draw();
 </script>
 </body>
 </html>
-

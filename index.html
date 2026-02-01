@@ -29,13 +29,12 @@ th{background:#2ecc71;color:#fff}
 @media(max-width:600px){
  .top{flex-direction:column}
  button,input,select{width:100%}
- table{font-size:13px}
+ table{font-size:12px}
 }
 
 @media print{
- body{background:#fff}
  .top,button,#filter{display:none}
- .box{box-shadow:none}
+ body{background:#fff}
 }
 </style>
 </head>
@@ -67,7 +66,7 @@ th{background:#2ecc71;color:#fff}
 <button onclick="exportCSV()" id="exBtn">Export CSV</button>
 <button class="blue" onclick="printReport()">Print</button>
 
-<input id="filter" placeholder="Filter name / flat" onkeyup="draw()">
+<input id="filter" placeholder="Filter name / flat / phone" onkeyup="draw()">
 <button class="red" onclick="logout()">Logout</button>
 </div>
 
@@ -126,16 +125,30 @@ month.onchange=draw;
 /* DATA */
 let data=JSON.parse(localStorage.getItem("rent"))||{};
 
-/* ADD */
+/* ADD PERSON (ALL DETAILS) */
 function addPerson(){
- let flat=prompt(lang.value==="bn"?"ফ্ল্যাট":"Flat");
+ let flat=prompt("Flat No");
  if(!flat)return;
- let name=prompt(lang.value==="bn"?"নাম":"Name");
+
+ let name=prompt("Name");
  if(!name)return;
- let rent=+prompt(lang.value==="bn"?"মোট ভাড়া":"Rent",0);
+
+ let phone=prompt("Phone Number");
+ let nid=prompt("NID Number");
+ let father=prompt("Father's Name");
+ let mother=prompt("Mother's Name");
+ let address=prompt("Permanent Address");
+
+ let rent=+prompt("Total Rent",0);
+
  let m=month.value;
  if(!data[m])data[m]=[];
- data[m].push({flat,name,rent,paid:0,history:[]});
+
+ data[m].push({
+  flat,name,phone,nid,father,mother,address,
+  rent,paid:0,history:[]
+ });
+
  save();draw();
 }
 
@@ -145,12 +158,17 @@ function draw(){
  list.innerHTML="";
  summary.innerHTML="";
  let totalRent=0,totalPaid=0;
- if(!data[m]){tRent.innerText=tPaid.innerText=tDue.innerText=0;return;}
+
+ if(!data[m]){
+  tRent.innerText=tPaid.innerText=tDue.innerText=0;
+  return;
+ }
 
  let f=filter.value.toLowerCase();
 
  data[m].forEach((p,i)=>{
-  if(!(p.name+p.flat).toLowerCase().includes(f))return;
+  if(!(p.name+p.flat+p.phone).toLowerCase().includes(f))return;
+
   let due=p.rent-p.paid;
   totalRent+=p.rent;
   totalPaid+=p.paid;
@@ -165,7 +183,7 @@ function draw(){
 <td class="${due<=0?'ok':'no'}">${due<=0?'✔️':'❌'}</td>
 <td>
 <button onclick="pay(${i})">Pay</button>
-<button class="blue" onclick="history(${i})">📜</button>
+<button class="blue" onclick="details(${i})">👤</button>
 <button onclick="edit(${i})">✏️</button>
 <button class="red" onclick="del(${i})">❌</button>
 </td>
@@ -174,7 +192,7 @@ function draw(){
 
  data[m].forEach(p=>{
   let li=document.createElement("li");
-  li.innerText=`Flat ${p.flat} | ${p.name} → Paid ${p.paid} | Due ${p.rent-p.paid}`;
+  li.innerText=`Flat ${p.flat} | ${p.name} | Phone: ${p.phone} | Due: ${p.rent-p.paid}`;
   summary.appendChild(li);
  });
 
@@ -193,11 +211,18 @@ function pay(i){
  save();draw();
 }
 
-/* HISTORY */
-function history(i){
- let h=data[month.value][i].history;
- if(!h.length)return alert("No payment yet");
- alert(h.map(x=>`${x.date} → ${x.amount} Tk`).join("\n"));
+/* DETAILS POPUP */
+function details(i){
+ let p=data[month.value][i];
+ alert(
+  "Name: "+p.name+
+  "\nFlat: "+p.flat+
+  "\nPhone: "+p.phone+
+  "\nNID: "+p.nid+
+  "\nFather: "+p.father+
+  "\nMother: "+p.mother+
+  "\nAddress: "+p.address
+ );
 }
 
 /* EDIT */
@@ -223,9 +248,9 @@ function save(){
 function exportCSV(){
  let m=month.value;
  if(!data[m])return alert("No data");
- let csv="Flat,Name,Rent,Paid,Due\n";
+ let csv="Flat,Name,Phone,NID,Father,Mother,Address,Rent,Paid,Due\n";
  data[m].forEach(p=>{
-  csv+=`${p.flat},${p.name},${p.rent},${p.paid},${p.rent-p.paid}\n`;
+  csv+=`${p.flat},${p.name},${p.phone},${p.nid},${p.father},${p.mother},${p.address},${p.rent},${p.paid},${p.rent-p.paid}\n`;
  });
  let a=document.createElement("a");
  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
@@ -242,7 +267,7 @@ function setLang(){
   title.innerText="বাসাভাড়া ম্যানেজার";
   addBtn.innerText="ভাড়াটিয়া যোগ";
   exBtn.innerText="CSV ডাউনলোড";
-  filter.placeholder="নাম / ফ্ল্যাট";
+  filter.placeholder="নাম / ফ্ল্যাট / ফোন";
   sumTitle.innerText="সারসংক্ষেপ";
  } else location.reload();
 }

@@ -109,8 +109,6 @@ th{background:#2ecc71;color:#fff}
 <p><b>Total Due:</b> <span id="tDue">0</span></p>
 </div>
 
-
-
 <script>
 /* LOGIN */
 function login(){
@@ -255,18 +253,15 @@ function closeHistory(){
  currentHistoryIndex=-1;
 }
 
-/* EDIT / DELETE (All Months for delete) */
+/* EDIT / DELETE (Delete only current month) */
 function edit(i){
  let m=month.value;
  let r=+prompt("Edit Rent",data[m][i].rent);
  if(r>=0)data[m][i].rent=r; save(); draw();
 }
 function del(i){
- let tenant = data[month.value][i];
- months.forEach(m=>{
-   if(!data[m]) return;
-   data[m] = data[m].filter(p => p.flat !== tenant.flat);
- });
+ let m = month.value;
+ data[m].splice(i,1); // only current month
  save(); draw();
 }
 

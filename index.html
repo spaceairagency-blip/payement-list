@@ -50,6 +50,47 @@ th{background:#2ecc71;color:#fff}
 @media print{
  .top,button,#filter,#historyContainer{display:none}
 }
+.adv{
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 100px;
+  top: 0;
+  position: absolute;
+}
+.popup-overlay{
+  box-shadow: 0 0 1000px rgba(0, 0, 0, .3);
+  height: 400px;
+  width: 300px;
+  background-color: #d0ece4;
+  border: 7px solid green;
+  display: none;
+  border-radius: 10px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  top: 50px;
+}
+.popup-overlay a {
+  background-color: #2ecc71;
+  text-decoration: none;
+  color: black;
+  padding: 10px;
+  position: relative;
+}
+.close-btn{
+  padding: 20px;
+  font-size: 30px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 20px;
+  background-color: #e74c3c;
+  border-radius: 10px;
+  cursor: pointer;
+  border-radius: 20px;
+}
 </style>
 </head>
 
@@ -117,6 +158,21 @@ th{background:#2ecc71;color:#fff}
 
 </div>
 
+<div class="pofadv">
+  <div class="adv">
+   <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-content">
+            <h2>Subscribe Our Channel</h2>
+            <p>|Subscribe our channel NABHAN CRAFTS IDEAS and get more fuatures|</p>
+            <br>
+            <a href="https://www.youtube.com/@nabhans_crafts_ideas">Subscribe</a>
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+
+        </div>
+    </div>
+</div>
+
+</div>
 <script>
 /* LOGIN */
 function login(){
@@ -130,6 +186,29 @@ function logout(){localStorage.removeItem("login");location.reload()}
 if(localStorage.getItem("login")){
  loginBox.classList.add("hidden");app.classList.remove("hidden")
 }
+
+const popup = document.getElementById("popupOverlay");
+
+// Show popup after page loads
+window.addEventListener("load", () => {
+    // Optional: show after 2 seconds
+    setTimeout(() => {
+        popup.style.display = "flex";
+        
+    }, 2000);
+});
+
+// Close popup function
+function closePopup() {
+    popup.style.display = "none";
+}
+
+// Close popup when clicking outside the content
+popup.addEventListener("click", (e) => {
+    if (e.target === popup) {
+        closePopup();
+    }
+});
 
 /* YEAR */
 document.querySelector(".year").innerText=new Date().getFullYear()
@@ -297,4 +376,5 @@ draw()
 </script>
 </body>
 </html>
+
 
